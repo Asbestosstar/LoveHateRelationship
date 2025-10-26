@@ -1,0 +1,21 @@
+{
+  "itemGroup.lovehaterelationship": "§cLove §7& §4Hate: §rRelationship",
+
+  "item.lovehaterelationship.garlic": "Garlic",
+  "item.lovehaterelationship.vampire_spawn_egg": "Vampire Spawn Egg",
+
+  "block.lovehaterelationship.garlic_plant": "Garlic Plant",
+
+  "entity.lovehaterelationship.vampire": "Vampire",
+
+  "tooltip.lovehaterelationship.garlic": "Keeps certain creatures at a respectful distance...",
+  "tooltip.lovehaterelationship.vampire_spawn_egg": "Summons a random Vampire — friend or foe?",
+
+  "death.attack.vampire_bite": "%1$s was drained by a Vampire",
+  "death.attack.vampire_bite.player": "%1$s was drained by a Vampire while fighting %2$s",
+
+  "advancement.lovehaterelationship.root.title": "Love & Hate",
+  "advancement.lovehaterelationship.root.description": "Where affection meets danger.",
+  "advancement.lovehaterelationship.feed_vampire.title": "Unholy Snack",
+  "advancement.lovehaterelationship.feed_vampire.description": "Feed a Vampire to gain their favor."
+}
