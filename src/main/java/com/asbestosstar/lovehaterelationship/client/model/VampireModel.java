@@ -29,9 +29,11 @@ public class VampireModel extends HumanoidModel<VampireEntity> {
     public void setupAnim(VampireEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 
+   
+        net.minecraft.world.entity.LivingEntity currentTarget = entity.getTarget();
+        int relToTarget = (currentTarget != null) ? entity.getRelationshipWith(currentTarget) : 0; // Default to neutral if no target
 
-        int rel = entity.getRelationship();
-        if (rel > 300) {
+        if (relToTarget > 300) {
             // Friendly: slight head tilt
             this.head.yRot += Mth.sin(ageInTicks * 0.1f) * 0.1f;
         }

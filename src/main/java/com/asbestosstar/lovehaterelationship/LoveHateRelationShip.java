@@ -14,10 +14,9 @@ import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemNameBlockItem;   // <-- add this import
+import net.minecraft.world.item.ItemNameBlockItem;  
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.block.Block;
-
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -68,8 +67,8 @@ public class LoveHateRelationShip {
             "vampire_spawn_egg",
             () -> new SpawnEggItem(
                     ModEntities.VAMPIRE.get(),
-                    0x3B0A0A,  // Primary color
-                    0x8B0000,  // Secondary color
+                    0x3B0A0A,  // Primary colour
+                    0x8B0000,  // Secondary colour
                     new Item.Properties()
             )
     );
@@ -98,7 +97,9 @@ public class LoveHateRelationShip {
         NeoForge.EVENT_BUS.register(this);
     }
 
-    private void commonSetup(FMLCommonSetupEvent event) {}
+    private void commonSetup(FMLCommonSetupEvent event) {
+ 
+    }
 
     public void onAttributeCreate(EntityAttributeCreationEvent event) {
         event.put(ModEntities.VAMPIRE.get(), VampireEntity.createAttributes().build());
@@ -133,7 +134,8 @@ public class LoveHateRelationShip {
         );
 
         for (VampireEntity vampire : nearbyVampires) {
-            if (vampire.getRelationship() > 300 && vampire.isAlive()) {
+            // Check relationship with the *player* who attacked
+            if (vampire.getRelationshipWith(player) > 300 && vampire.isAlive()) {
                 vampire.setTarget(livingTarget);
             }
         }

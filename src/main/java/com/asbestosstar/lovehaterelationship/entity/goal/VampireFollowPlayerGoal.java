@@ -11,7 +11,7 @@ public class VampireFollowPlayerGoal extends Goal {
     private final VampireEntity vampire;
     private final double speedModifier;
     private final float followRadius;
-    private LivingEntity following;
+    private Player following; // Explicitly Player type
 
     public VampireFollowPlayerGoal(VampireEntity vampire, double speed, float followRadius) {
         this.vampire = vampire;
@@ -22,12 +22,13 @@ public class VampireFollowPlayerGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (vampire.getRelationship() <= 200) return false; // Only follow if friendly
-
         Player nearest = vampire.level().getNearestPlayer(vampire, followRadius);
         if (nearest == null || nearest.isCreative() || nearest.isSpectator()) {
             return false;
         }
+
+        // Check relationship with the *nearest* player using the new method
+        if (vampire.getRelationshipWith(nearest) <= 200) return false; // Only follow if friendly
 
         this.following = nearest;
         return true;
@@ -35,10 +36,12 @@ public class VampireFollowPlayerGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return following != null &&
-               following.isAlive() &&
-               vampire.getRelationship() > 200 &&
-               vampire.distanceToSqr(following) > 4.0; // Stop if close
+        // Ensure following player is still valid and relationship is high enough
+        if (following == null || !following.isAlive() || vampire.getRelationshipWith(following) <= 200) { // Check relationship again
+            return false;
+        }
+
+        return vampire.distanceToSqr(following) > 4.0; // Stop if close
     }
 
     @Override

@@ -1,4 +1,3 @@
-
 package com.asbestosstar.lovehaterelationship.entity.goal;
 
 import com.asbestosstar.lovehaterelationship.entity.VampireEntity;
@@ -26,12 +25,14 @@ public class VampireFriendlyBiteGoal extends Goal {
             return false;
         }
 
-        if (vampire.getRelationship() < -299) {
+        // Check relationship with the nearest playe
+        Player player = vampire.level().getNearestPlayer(vampire, 6.0);
+        if (player == null || player.isCreative() || player.isSpectator()) {
             return false;
         }
 
-        Player player = vampire.level().getNearestPlayer(vampire, 6.0);
-        if (player == null || player.isCreative() || player.isSpectator()) {
+        // Use relationship with the nearest player
+        if (vampire.getRelationshipWith(player) < -299) { 
             return false;
         }
 
@@ -46,10 +47,12 @@ public class VampireFriendlyBiteGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return targetPlayer != null &&
-               targetPlayer.isAlive() &&
-               vampire.getRelationship() >= -299 &&
-               vampire.distanceToSqr(targetPlayer) <= 4.0;
+        // Ensure targetPlayer is still valid and relationship is high enough
+        if (targetPlayer == null || !targetPlayer.isAlive() || vampire.getRelationshipWith(targetPlayer) < -299) { // Check relationship again
+            return false;
+        }
+
+        return vampire.distanceToSqr(targetPlayer) <= 4.0;
     }
 
     @Override
@@ -85,7 +88,7 @@ public class VampireFriendlyBiteGoal extends Goal {
         if (targetPlayer != null && targetPlayer.isAlive() && !vampire.level().isClientSide) {
             DamageSource biteDamageSource = vampire.damageSources().mobAttack(vampire);
             targetPlayer.hurt(biteDamageSource, 4.0f);
-            vampire.adjustRelationship(200);
+            vampire.adjustRelationshipWith(targetPlayer, 200); // Use adjustRelationshipWith
             vampire.playSound(net.minecraft.sounds.SoundEvents.PLAYER_BREATH, 1.0f, 1.0f);
         }
     }

@@ -60,9 +60,9 @@ public class VampireAvoidGarlicGoal extends Goal {
                                 dz /= length;
                             }
 
-                            int targetX = this.garlicPos.getX() + (int) Math.round(dx * 4.0);
+                            int targetX = this.garlicPos.getX() + (int) Math.round(dx * 16.0);
                             int targetY = this.garlicPos.getY();
-                            int targetZ = this.garlicPos.getZ() + (int) Math.round(dz * 4.0);
+                            int targetZ = this.garlicPos.getZ() + (int) Math.round(dz * 16.0);
 
                             this.pathToAvoid = vampire.getNavigation().createPath(targetX, targetY, targetZ, 0);
 
