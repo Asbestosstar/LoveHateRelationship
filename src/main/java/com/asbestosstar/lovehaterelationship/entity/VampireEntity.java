@@ -1,5 +1,6 @@
 package com.asbestosstar.lovehaterelationship.entity;
 
+import com.asbestosstar.lovehaterelationship.LoveHateRelationShip;
 import com.asbestosstar.lovehaterelationship.entity.goal.SeekShelterGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireAvoidGarlicGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireDefendPlayerGoal;
@@ -78,6 +79,10 @@ public class VampireEntity extends Monster {
 	// Map to store relationships with players, keyed by their UUID
 	// This map *will* be persisted in NBT
 	private final Map<UUID, Integer> playerRelationships = new HashMap<>();
+
+	// Map to store the last known positions of targets, keyed by their UUID
+	// This map is not persisted in NBT
+	private final Map<UUID, BlockPos> targetPositions = new HashMap<>();
 
 	private boolean nightForced = false;
 
@@ -180,6 +185,115 @@ public class VampireEntity extends Monster {
 			return; // Prevent self-referencing
 		int currentRel = getRelationshipWith(entity);
 		setRelationshipWith(entity, currentRel + delta);
+		// *** UPDATE TARGET POSITION MAP ON RELATIONSHIP CHANGE ***
+		// If the relationship becomes hostile, remember the target's position
+		if (delta < 0 && getRelationshipWith(entity) <= HOSTILE_THRESHOLD) { // Hurt -> more hostile
+			if (entity instanceof LivingEntity livingTarget) {
+				targetPositions.put(entity.getUUID(), livingTarget.blockPosition());
+			}
+		}
+		// If the relationship becomes friendly, forget the target's position
+		if (delta > 0 && currentRel <= HOSTILE_THRESHOLD && getRelationshipWith(entity) > HOSTILE_THRESHOLD) { // Less
+																												// hostile
+																												// ->
+																												// friendly
+			targetPositions.remove(entity.getUUID());
+		}
+		// *** END UPDATE ***
+	}
+
+	@Override
+	public boolean hurt(DamageSource source, float amount) {
+		// Immune to potion-magic damage
+		if (source.is(DamageTypes.MAGIC))
+			return false;
+
+		// Wooden weapons hurt a lot
+		Entity sourceEntity = source.getEntity();
+		if (sourceEntity instanceof Player player) {
+			ItemStack weapon = player.getMainHandItem();
+			if (weapon.is(Items.WOODEN_SWORD) || weapon.is(Items.WOODEN_AXE)) {
+				amount = 66.6f;
+			}
+		}
+
+		boolean result = super.hurt(source, amount);
+		if (result && sourceEntity instanceof LivingEntity attacker && attacker != this) { // Prevent self-hurting
+																							// relationship change
+			// Adjust relationship with the entity that hurt this vampire
+			adjustRelationshipWith(attacker, -50);
+			// *** UPDATE TARGET POSITION MAP ON HURT ***
+			// Remember the attacker's position if relationship becomes hostile
+			if (getRelationshipWith(attacker) <= HOSTILE_THRESHOLD) {
+				targetPositions.put(attacker.getUUID(), attacker.blockPosition());
+			}
+			// *** END UPDATE ***
+		}
+		return result;
+	}
+
+	@Override
+	public boolean doHurtTarget(Entity target) {
+		if (!(target instanceof LivingEntity living)) {
+			return super.doHurtTarget(target);
+		}
+
+		int relToTarget = getRelationshipWith(living);
+		float baseDamage = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
+
+		// Calculate bonus damage based on target's max health
+		float targetMaxHealth = living.getMaxHealth();
+		float bonusDamagePer100HP = 3.0f;
+		float bonusDamage = (targetMaxHealth / 100.0f) * bonusDamagePer100HP;
+
+		float totalDamage = baseDamage + bonusDamage;
+
+		boolean result;
+		if (relToTarget > 300) {
+			float friendlyTotalDamage = baseDamage + 4.0f + bonusDamage;
+			result = living.hurt(this.damageSources().mobAttack(this), friendlyTotalDamage);
+			living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 0));
+		} else {
+			// Standard damage calculation with bonus
+			result = living.hurt(this.damageSources().mobAttack(this), totalDamage);
+			if (relToTarget < -800 && !level().isClientSide && level() instanceof ServerLevel sl) {
+				for (int i = 0; i < 2; i++) {
+					EntityType.BAT.spawn(sl, blockPosition(), MobSpawnType.TRIGGERED);
+				}
+			}
+			if (relToTarget < -500) {
+				living.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));
+				living.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 1));
+				living.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, 1));
+
+				// Apply bonus damage to the extra flat damage
+				living.hurt(this.damageSources().mobAttack(this), 2.0f + bonusDamage);
+			}
+			if (relToTarget <= -500 && !level().isClientSide && level() instanceof ServerLevel serverLevel) {
+				// Summon lightning if relationship is -500 or lower
+				// Offset the lightning strike position slightly to avoid harming the vampire
+				// directly
+				double lightningX = target.getX() + (serverLevel.getRandom().nextDouble() - 0.5) * 2.0;
+				double lightningY = target.getY();
+				double lightningZ = target.getZ() + (serverLevel.getRandom().nextDouble() - 0.5) * 2.0;
+				BlockPos lightningPos = new BlockPos((int) lightningX, (int) lightningY, (int) lightningZ);
+				net.minecraft.world.entity.LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(serverLevel);
+				if (lightning != null) {
+					lightning.moveTo(Vec3.atBottomCenterOf(lightningPos));
+					// lightning.setCause(this); // or null if not caused by an entity
+					serverLevel.addFreshEntity(lightning);
+				}
+			}
+		}
+
+		// *** UPDATE TARGET POSITION MAP ON HURT ***
+		// Remember the target's position if relationship is hostile
+		if (relToTarget <= HOSTILE_THRESHOLD) {
+			targetPositions.put(living.getUUID(), living.blockPosition());
+		}
+		// *** END UPDATE ***
+
+		return result;
 	}
 
 	@Override
@@ -237,6 +351,7 @@ public class VampireEntity extends Monster {
 			}
 		}
 		// entityRelationships map is not loaded from NBT and remains empty
+		// targetPositions map is not loaded from NBT and remains empty
 
 		if (tag.contains("Variant"))
 			entityData.set(DATA_VARIANT, tag.getInt("Variant"));
@@ -286,6 +401,12 @@ public class VampireEntity extends Monster {
 				}
 			}
 
+			// Stalking logic: If no current target and hostile relationships exist, move
+			// towards a remembered position
+			if (currentTarget == null) {
+				attemptStalking();
+			}
+
 			if (tickCount - lastRelationshipChangeTick >= RELATIONSHIP_CHANGE_INTERVAL_TICKS) {
 				decayPlayerRelationships(); // Decay relationships > -300
 				driftPlayerRelationships(currentTarget); // Increase relationships < -300 if not fighting them
@@ -319,6 +440,114 @@ public class VampireEntity extends Monster {
 			} else {
 				nightForced = false;
 			}
+		}
+	}
+
+	/**
+	 * Attempts to stalk a hostile target by moving towards a remembered position.
+	 */
+	private void attemptStalking() {
+		// Find a hostile target whose position is remembered
+		for (Map.Entry<UUID, BlockPos> entry : targetPositions.entrySet()) {
+			UUID targetUUID = entry.getKey();
+			BlockPos lastKnownPos = entry.getValue();
+
+			// Try to find the entity by UUID (works for players, might work for other
+			// living entities if they are loaded)
+			// For players, use getPlayerByUUID which is more reliable for offline/online
+			// status
+			LivingEntity targetEntity = null;
+			Player player = level().getPlayerByUUID(targetUUID);
+			if (player != null) {
+				targetEntity = player;
+			} else {
+				// For non-players (or if getPlayerByUUID failed), try getEntity(int) using the
+				// entity's ID
+				// This is less reliable as the entity might not be loaded.
+				// First, we need to find an entity by UUID if it's loaded.
+				// A common approach is to iterate through loaded entities, which can be
+				// inefficient.
+				// Let's try the player method first, and for non-players, we'll rely on the
+				// position being set
+				// when the entity was last seen/hurt and hope it's still relevant or the entity
+				// reappears nearby.
+
+				// Option 1: Iterate loaded entities (can be slow if many entities are loaded)
+				// for (Entity e : level().getAllEntities()) {
+				// if (e.getUUID().equals(targetUUID) && e instanceof LivingEntity le) {
+				// targetEntity = le;
+				// break;
+				// }
+				// }
+
+				// Option 2: Use getEntity(int) if we stored the entity's ID along with UUID and
+				// position
+				// This requires changing the targetPositions map structure, which is more
+				// complex.
+				// For now, let's assume if it's not a player, the entity might not be loaded,
+				// and we'll proceed with the position-based logic.
+
+				// Since getPlayerByUUID failed and getEntity(int) requires the entity ID,
+				// we'll proceed assuming the entity might not be loaded. The position is still
+				// valid.
+				// We'll check the relationship map to see if the UUID corresponds to a hostile
+				// player or entity.
+				// If it's a player, we can check if they are online.
+				// If it's a non-player, we might need a different strategy or timeout for
+				// positions.
+			}
+
+			// Check if the relationship is still hostile (for both players and other
+			// entities)
+			// If targetEntity is found, check its current relationship
+			int currentRel = NEUTRAL; // Default if entity not found
+			if (targetEntity != null) {
+				currentRel = getRelationshipWith(targetEntity);
+			} else {
+				// If entity is not loaded, check if the UUID belongs to a player or an entity
+				// in our relationship maps
+				// and assume the relationship hasn't changed drastically if it was very
+				// hostile.
+				if (playerRelationships.containsKey(targetUUID)) {
+					currentRel = playerRelationships.get(targetUUID);
+				} else if (entityRelationships.containsKey(targetUUID)) {
+					currentRel = entityRelationships.get(targetUUID);
+				}
+			}
+
+			if (currentRel <= HOSTILE_THRESHOLD) {
+				// If the entity is loaded and close, set it as target
+				if (targetEntity != null && this.distanceToSqr(targetEntity) < 32.0 * 32.0) { // Adjust range as needed
+					this.setTarget(targetEntity);
+					return; // Found a target nearby, stop stalking for this tick
+				}
+				// If the entity is not loaded or far away, try to navigate to the last known
+				// position
+				// Only navigate if not already navigating elsewhere and the position is
+				// reasonable
+				if (!this.getNavigation().isInProgress() && Math.abs(this.getY() - lastKnownPos.getY()) < 10) { // Prevent
+																												// chasing
+																												// to
+																												// different
+																												// Y
+																												// levels
+					this.getNavigation().moveTo(lastKnownPos.getX() + 0.5, lastKnownPos.getY(),
+							lastKnownPos.getZ() + 0.5, 1.0); // Adjust speed if needed
+					return; // Started navigating, stop trying other positions for this tick
+				}
+			} else {
+				// If relationship is no longer hostile, remove the position
+				targetPositions.remove(targetUUID);
+			}
+			// If entity was not found (e.g., non-player entity that is now gone), check if
+			// it was a player
+			// and remove if necessary, or potentially add a timeout mechanism for
+			// non-player positions.
+			// For now, if relationship is not checked due to entity not being loaded, the
+			// position might linger.
+			// It will be overwritten if the entity is interacted with again or removed if
+			// the relationship changes
+			// when the entity is eventually loaded and interacted with.
 		}
 	}
 
@@ -423,11 +652,7 @@ public class VampireEntity extends Monster {
 			chargeCooldown = CHARGE_COOLDOWN_TICKS;
 			if (this.level() instanceof ServerLevel sl) {
 				// *** PLAY STATIC ELECTRICITY WHEN STARTING CHARGE ***
-				sl.playSound(null, this.blockPosition(), net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
-						.wrapAsHolder(net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
-								.get(net.minecraft.resources.ResourceLocation
-										.fromNamespaceAndPath("lovehaterelationship", "vampire_static_electricity")))
-						.value(), SoundSource.HOSTILE, 0.7f, 1.0f + this.random.nextFloat() * 0.2f);
+				sl.playSound(null, this.blockPosition(), LoveHateRelationShip.vampire_static_electricity.value(), SoundSource.HOSTILE, 0.7f, 1.0f + this.random.nextFloat() * 0.2f);
 				// *** END SOUND ***
 			}
 			this.setSprinting(true);
@@ -493,11 +718,7 @@ public class VampireEntity extends Monster {
 				if (this.level() instanceof ServerLevel sl) {
 					// *** PLAY CREEPY LAUGH WHEN RAMMING (CHARGING HIT) ***
 					sl.playSound(null, target.blockPosition(),
-							net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
-									.wrapAsHolder(net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
-											.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
-													"lovehaterelationship", "vampire_creepy_laugh")))
-									.value(),
+LoveHateRelationShip.vampire_creepy_laugh.value(),
 							SoundSource.HOSTILE, 0.8f, 0.9f + this.random.nextFloat() * 0.3f);
 					// *** END SOUND ***
 					sl.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY(0.6), target.getZ(), 8, 0.2, 0.2,
@@ -695,30 +916,6 @@ public class VampireEntity extends Monster {
 	}
 
 	@Override
-	public boolean hurt(DamageSource source, float amount) {
-		// Immune to potion-magic damage
-		if (source.is(DamageTypes.MAGIC))
-			return false;
-
-		// Wooden weapons hurt a lot
-		Entity sourceEntity = source.getEntity();
-		if (sourceEntity instanceof Player player) {
-			ItemStack weapon = player.getMainHandItem();
-			if (weapon.is(Items.WOODEN_SWORD) || weapon.is(Items.WOODEN_AXE)) {
-				amount = 66.6f;
-			}
-		}
-
-		boolean result = super.hurt(source, amount);
-		if (result && sourceEntity instanceof LivingEntity attacker && attacker != this) { // Prevent self-hurting
-																							// relationship change
-			// Adjust relationship with the entity that hurt this vampire
-			adjustRelationshipWith(attacker, -50);
-		}
-		return result;
-	}
-
-	@Override
 	protected SoundEvent getAmbientSound() {
 		return SoundEvents.VEX_AMBIENT;
 	}
@@ -839,63 +1036,6 @@ public class VampireEntity extends Monster {
 	private boolean isAcceptableFood(ItemStack stack) {
 		return stack.is(Items.PORKCHOP) || stack.is(Items.BEEF) || stack.is(Items.MUTTON) || stack.is(Items.SPIDER_EYE)
 				|| stack.is(Items.ROTTEN_FLESH);
-	}
-
-	@Override
-	public boolean doHurtTarget(Entity target) {
-		if (!(target instanceof LivingEntity living)) {
-			return super.doHurtTarget(target);
-		}
-
-		int relToTarget = getRelationshipWith(living);
-		float baseDamage = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
-
-		// Calculate bonus damage based on target's max health
-		float targetMaxHealth = living.getMaxHealth();
-		float bonusDamagePer100HP = 3.0f;
-		float bonusDamage = (targetMaxHealth / 100.0f) * bonusDamagePer100HP;
-
-		float totalDamage = baseDamage + bonusDamage;
-
-		boolean result;
-		if (relToTarget > 300) {
-			float friendlyTotalDamage = baseDamage + 4.0f + bonusDamage;
-			result = living.hurt(this.damageSources().mobAttack(this), friendlyTotalDamage);
-			living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 0));
-		} else {
-			// Standard damage calculation with bonus
-			result = living.hurt(this.damageSources().mobAttack(this), totalDamage);
-			if (relToTarget < -800 && !level().isClientSide && level() instanceof ServerLevel sl) {
-				for (int i = 0; i < 2; i++) {
-					EntityType.BAT.spawn(sl, blockPosition(), MobSpawnType.TRIGGERED);
-				}
-			}
-			if (relToTarget < -500) {
-				living.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1));
-				living.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 1));
-				living.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, 1));
-
-				// Apply bonus damage to the extra flat damage
-				living.hurt(this.damageSources().mobAttack(this), 2.0f + bonusDamage);
-			}
-			if (relToTarget <= -500 && !level().isClientSide && level() instanceof ServerLevel serverLevel) {
-				// Summon lightning if relationship is -500 or lower
-				// Offset the lightning strike position slightly to avoid harming the vampire
-				// directly
-				double lightningX = target.getX() + (serverLevel.getRandom().nextDouble() - 0.5) * 2.0;
-				double lightningY = target.getY();
-				double lightningZ = target.getZ() + (serverLevel.getRandom().nextDouble() - 0.5) * 2.0;
-				BlockPos lightningPos = new BlockPos((int) lightningX, (int) lightningY, (int) lightningZ);
-				net.minecraft.world.entity.LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(serverLevel);
-				if (lightning != null) {
-					lightning.moveTo(Vec3.atBottomCenterOf(lightningPos));
-					// lightning.setCause(this); // or null if not caused by an entity
-					serverLevel.addFreshEntity(lightning);
-				}
-			}
-		}
-
-		return result;
 	}
 
 	public int getVariant() {

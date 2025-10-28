@@ -19,6 +19,19 @@ public class VampireHuntZombiesAnimalsGoal extends Goal {
             .range(32.0)
             .ignoreLineOfSight();
 
+    // Cache the VampireLlama class to avoid repeated Class.forName calls
+    private static final Class<?> VAMPIRE_LLAMA_CLASS;
+
+    static {
+        Class<?> clazz = null;
+        try {
+            clazz = Class.forName("com.startraveler.vampiricllamas.entity.VampireLlama");
+        } catch (ClassNotFoundException e) {
+            // If the class isn't found, leave it as null - the check will always return false
+        }
+        VAMPIRE_LLAMA_CLASS = clazz;
+    }
+
     public VampireHuntZombiesAnimalsGoal(VampireEntity vampire) {
         this.vampire = vampire;
         this.setFlags(EnumSet.of(Goal.Flag.TARGET));
@@ -39,7 +52,8 @@ public class VampireHuntZombiesAnimalsGoal extends Goal {
 
         return target != null &&
                target.isAlive() &&
-               (target.getType() == EntityType.ZOMBIE || target instanceof Animal);
+               (target.getType() == EntityType.ZOMBIE || target instanceof Animal) &&
+               !isVampireLlama(target);
     }
 
     @Override
@@ -47,17 +61,20 @@ public class VampireHuntZombiesAnimalsGoal extends Goal {
         return target != null &&
                target.isAlive() &&
                (target.getType() == EntityType.ZOMBIE || target instanceof Animal) &&
+               !isVampireLlama(target) &&
                vampire.distanceToSqr(target) > 2.0;
     }
 
     @Override
     public void start() {
-        vampire.setTarget(target);
+        if (!isVampireLlama(target)) {
+            vampire.setTarget(target);
+        }
     }
 
     @Override
     public void tick() {
-        if (this.target != null && vampire.getTarget() != this.target) {
+        if (this.target != null && !isVampireLlama(target) && vampire.getTarget() != this.target) {
             vampire.setTarget(this.target);
         }
     }
@@ -66,5 +83,15 @@ public class VampireHuntZombiesAnimalsGoal extends Goal {
     public void stop() {
         vampire.setTarget(null);
         this.target = null;
+    }
+
+    /**
+     * Checks if the target entity is a VampireLlama to avoid targeting it
+     */
+    private boolean isVampireLlama(LivingEntity entity) {
+        if (VAMPIRE_LLAMA_CLASS == null) {
+            return false; // Class not found, so it can't be a VampireLlama
+        }
+        return VAMPIRE_LLAMA_CLASS.isAssignableFrom(entity.getClass());
     }
 }

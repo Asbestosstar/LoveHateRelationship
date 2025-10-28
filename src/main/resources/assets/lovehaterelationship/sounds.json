@@ -3,7 +3,6 @@
     "sounds": [
       {
         "name": "lovehaterelationship:vampire_creepy_laugh",
-        "type": "sound",
         "volume": 0.7,
         "pitch": 1.0,
         "weight": 1,
@@ -17,7 +16,6 @@
     "sounds": [
       {
         "name": "lovehaterelationship:vampire_static_electricity",
-        "type": "sound",
         "volume": 0.5,
         "pitch": 1.0,
         "weight": 1,
@@ -31,7 +29,6 @@
     "sounds": [
       {
         "name": "lovehaterelationship:vampire_bite",
-        "type": "sound",
         "volume": 0.6,
         "pitch": 1.0,
         "weight": 1,

@@ -2,6 +2,7 @@ package com.asbestosstar.lovehaterelationship.entity.goal;
 
 import java.util.EnumSet;
 
+import com.asbestosstar.lovehaterelationship.LoveHateRelationShip;
 import com.asbestosstar.lovehaterelationship.entity.VampireEntity;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -94,8 +95,7 @@ public class VampireFriendlyBiteGoal extends Goal {
             targetPlayer.hurt(biteDamageSource, 4.0f);
             vampire.adjustRelationshipWith(targetPlayer, 200); // Use adjustRelationshipWith
             //vampire.playSound(net.minecraft.sounds.SoundEvents.PLAYER_BREATH, 1.0f, 1.0f);
-            vampire.level().playSound(targetPlayer, vampire.blockPosition(), BuiltInRegistries.SOUND_EVENT.wrapAsHolder(
-                    BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.fromNamespaceAndPath("lovehaterelationship", "vampire_bite"))).value(),
+            vampire.level().playSound(targetPlayer, vampire.blockPosition(), LoveHateRelationShip.vampire_bite.value(),
                     SoundSource.HOSTILE, 1.0f, 1.0f);
         
         }

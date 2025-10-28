@@ -5,6 +5,9 @@ import com.asbestosstar.lovehaterelationship.client.renderer.VampireRenderer;
 import com.asbestosstar.lovehaterelationship.entity.ModEntities;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.sounds.SoundEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -14,10 +17,14 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 @Mod(value = LoveHateRelationShip.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = LoveHateRelationShip.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class LoveHateRelationshipClient {
+	
+
+	
 
     public LoveHateRelationshipClient(ModContainer container) {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);

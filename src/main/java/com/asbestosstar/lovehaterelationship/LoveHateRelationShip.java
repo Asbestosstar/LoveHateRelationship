@@ -4,9 +4,12 @@ import com.asbestosstar.lovehaterelationship.block.GarlicCropBlock;
 import com.asbestosstar.lovehaterelationship.entity.ModEntities;
 import com.asbestosstar.lovehaterelationship.entity.VampireEntity;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -84,12 +87,44 @@ public class LoveHateRelationShip {
                         output.accept(VAMPIRE_SPAWN_EGG.get());
                         // No BlockItem for the crop itself (standard for crops)
                     }).build());
+    
+    public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
+            DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, LoveHateRelationShip.MODID);
+    
+    public static final Holder<SoundEvent> vampire_creepy_laugh = SOUND_EVENTS.register(
+            "vampire_creepy_laugh",
+            // Takes in the registry name
+            SoundEvent::createVariableRangeEvent
+    );
+    
+    public static final Holder<SoundEvent> vampire_static_electricity = SOUND_EVENTS.register(
+            "vampire_static_electricity",
+            // Takes in the registry name
+            SoundEvent::createVariableRangeEvent
+    );
+    
+    public static final Holder<SoundEvent> vampire_bite = SOUND_EVENTS.register(
+            "vampire_bite",
+            // Takes in the registry name
+            SoundEvent::createVariableRangeEvent
+    );
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     public LoveHateRelationShip(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         ENTITY_TYPES.register(modEventBus);
+        SOUND_EVENTS.register(modEventBus); 
+
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
