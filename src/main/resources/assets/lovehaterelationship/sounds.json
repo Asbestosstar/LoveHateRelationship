@@ -1,0 +1,26 @@
+{
+  "vampire_creepy_laugh": {
+    "sounds": [
+      {
+        "name": "lovehaterelationship:vampire_creepy_laugh",
+        "stream": false
+      }
+    ]
+  },
+  "vampire_static_electricity": {
+    "sounds": [
+      {
+        "name": "lovehaterelationship:vampire_static_electricity",
+        "stream": false
+      }
+    ]
+  },
+  "vampire_bite": {
+    "sounds": [
+      {
+        "name": "lovehaterelationship:vampire_bite",
+        "stream": false
+      }
+    ]
+  }
+}

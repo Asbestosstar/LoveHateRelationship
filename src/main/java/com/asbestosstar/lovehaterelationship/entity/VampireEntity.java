@@ -1,11 +1,5 @@
 package com.asbestosstar.lovehaterelationship.entity;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
-
 import com.asbestosstar.lovehaterelationship.entity.goal.SeekShelterGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireAvoidGarlicGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireDefendPlayerGoal;
@@ -18,6 +12,8 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -34,9 +30,9 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -48,6 +44,7 @@ import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -58,6 +55,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 
 public class VampireEntity extends Monster {
 	private static final EntityDataAccessor<Integer> DATA_VARIANT = SynchedEntityData.defineId(VampireEntity.class,
@@ -300,8 +303,13 @@ public class VampireEntity extends Monster {
 				if (!nightForced && sl.isDay()) {
 					sl.setDayTime(18000);
 					nightForced = true;
-					sl.playSound(null, this.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0f,
-							0.8f);
+					// *** PLAY CREEPY LAUGH WHEN FORCING NIGHT ***
+					sl.playSound(null, this.blockPosition(), net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
+							.wrapAsHolder(net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
+									.get(net.minecraft.resources.ResourceLocation
+											.fromNamespaceAndPath("lovehaterelationship", "vampire_creepy_laugh")))
+							.value(), SoundSource.HOSTILE, 1.0f, 1.0f);
+					// *** END SOUND ***
 					for (int i = 0; i < 20; i++) {
 						sl.sendParticles(ParticleTypes.SMOKE, this.getX() + (random.nextDouble() - 0.5) * 16,
 								this.getY() + 10 + random.nextDouble() * 8,
@@ -413,9 +421,15 @@ public class VampireEntity extends Monster {
 		if (!charging && chargeCooldown == 0 && distSq >= CHARGE_MIN_DIST_SQ && relToTarget <= -500) {
 			charging = true;
 			chargeCooldown = CHARGE_COOLDOWN_TICKS;
-			if (this.level() instanceof ServerLevel sl)
-				sl.playSound(null, this.blockPosition(), SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 0.7f,
-						1.2f + this.random.nextFloat() * 0.2f);
+			if (this.level() instanceof ServerLevel sl) {
+				// *** PLAY STATIC ELECTRICITY WHEN STARTING CHARGE ***
+				sl.playSound(null, this.blockPosition(), net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
+						.wrapAsHolder(net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
+								.get(net.minecraft.resources.ResourceLocation
+										.fromNamespaceAndPath("lovehaterelationship", "vampire_static_electricity")))
+						.value(), SoundSource.HOSTILE, 0.7f, 1.0f + this.random.nextFloat() * 0.2f);
+				// *** END SOUND ***
+			}
 			this.setSprinting(true);
 		}
 
@@ -477,8 +491,15 @@ public class VampireEntity extends Monster {
 				Vec3 v = new Vec3(target.getX() - this.getX(), 0.0, target.getZ() - this.getZ()).normalize();
 				target.push(v.x * CHARGE_KNOCK_H, CHARGE_KNOCK_UP, v.z * CHARGE_KNOCK_H);
 				if (this.level() instanceof ServerLevel sl) {
-					sl.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.HOSTILE,
-							0.8f, 0.9f + this.random.nextFloat() * 0.3f);
+					// *** PLAY CREEPY LAUGH WHEN RAMMING (CHARGING HIT) ***
+					sl.playSound(null, target.blockPosition(),
+							net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
+									.wrapAsHolder(net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT
+											.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+													"lovehaterelationship", "vampire_creepy_laugh")))
+									.value(),
+							SoundSource.HOSTILE, 0.8f, 0.9f + this.random.nextFloat() * 0.3f);
+					// *** END SOUND ***
 					sl.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY(0.6), target.getZ(), 8, 0.2, 0.2,
 							0.2, 0.1);
 				}
