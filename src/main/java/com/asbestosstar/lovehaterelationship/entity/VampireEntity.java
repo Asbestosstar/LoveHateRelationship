@@ -1,5 +1,11 @@
 package com.asbestosstar.lovehaterelationship.entity;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
 import com.asbestosstar.lovehaterelationship.LoveHateRelationShip;
 import com.asbestosstar.lovehaterelationship.entity.goal.SeekShelterGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireAvoidGarlicGoal;
@@ -7,14 +13,13 @@ import com.asbestosstar.lovehaterelationship.entity.goal.VampireDefendPlayerGoal
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireFollowPlayerGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireFriendlyBiteGoal;
 import com.asbestosstar.lovehaterelationship.entity.goal.VampireHuntZombiesAnimalsGoal;
+import com.asbestosstar.lovehaterelationship.entity.goal.VampireMountVampireLlamaGoal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.IntTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -31,9 +36,9 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -45,7 +50,6 @@ import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -56,12 +60,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
 
 public class VampireEntity extends Monster {
 	private static final EntityDataAccessor<Integer> DATA_VARIANT = SynchedEntityData.defineId(VampireEntity.class,
@@ -135,14 +133,16 @@ public class VampireEntity extends Monster {
 
 	@Override
 	protected void registerGoals() {
-		goalSelector.addGoal(0, new FloatGoal(this));
-		goalSelector.addGoal(1, new LookAtPlayerGoal(this, Player.class, 8.0f));
-		goalSelector.addGoal(2, new RandomLookAroundGoal(this));
-		goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.2, false));
+		goalSelector.addGoal(0, new SeekShelterGoal(this, 1.4));
+		goalSelector.addGoal(1, new VampireAvoidGarlicGoal(this, 1.0));
+	    goalSelector.addGoal(2, new VampireMountVampireLlamaGoal(this));
+		goalSelector.addGoal(3, new VampireFriendlyBiteGoal(this));
 		goalSelector.addGoal(4, new VampireFollowPlayerGoal(this, 1.0, 12.0f));
-		goalSelector.addGoal(5, new VampireFriendlyBiteGoal(this));
-		goalSelector.addGoal(6, new VampireAvoidGarlicGoal(this, 1.0));
-		goalSelector.addGoal(7, new SeekShelterGoal(this, 1.4));
+		goalSelector.addGoal(5, new MeleeAttackGoal(this, 1.2, false));
+		goalSelector.addGoal(6, new FloatGoal(this));
+		goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f));
+		goalSelector.addGoal(8, new RandomLookAroundGoal(this));
+
 
 		targetSelector.addGoal(0, new VampireHuntZombiesAnimalsGoal(this));
 		targetSelector.addGoal(1, new VampireDefendPlayerGoal(this));
