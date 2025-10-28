@@ -103,3 +103,26 @@ runs/client/usercache.json
 runs/client/usernamecache.json
 runs/junit/junit_jvm_args.txt
 runs/junit/junit_test_args.txt
+runs/client/config/dooteramigos-common.toml
+runs/client/config/effigy-common.toml
+runs/client/config/health_indicators_config.json
+runs/client/config/healthindicators.json
+runs/client/config/vampiricllamas-common.toml
+runs/client/config/yacl.json5
+runs/client/crash-reports/crash-2025-10-27_01.36.04-fml.txt
+runs/client/crash-reports/crash-2025-10-27_01.45.46-client.txt
+runs/client/logs/2025-10-27-4.log.gz
+runs/client/logs/2025-10-27-5.log.gz
+runs/client/logs/2025-10-27-6.log.gz
+runs/client/logs/2025-10-27-7.log.gz
+runs/client/mods/HealthIndicators-21.1.3.jar
+runs/client/mods/architectury-13.0.8-neoforge.jar
+runs/client/mods/dooteramigos-1.0.0 (1).jar
+runs/client/mods/effigy-1.0.0.jar
+runs/client/mods/geckolib-neoforge-1.21.1-4.8.2.jar
+runs/client/mods/vampiricllamas-1.0.0.jar
+runs/client/mods/yamamura-sadako-beta-2b-1.21.1-neoforge.jar
+runs/client/mods/yet_another_config_lib_v3-3.8.0+1.21.1-neoforge.jar
+runs/client/saves/New World/data/sadako_mapvars.dat
+runs/client/saves/New World/poi/r.-2.2.mca
+runs/client/saves/New World/poi/r.-3.2.mca
