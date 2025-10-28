@@ -3,7 +3,13 @@
     "sounds": [
       {
         "name": "lovehaterelationship:vampire_creepy_laugh",
-        "stream": false
+        "type": "sound",
+        "volume": 0.7,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false,
+        "attenuation_distance": 16,
+        "preload": false
       }
     ]
   },
@@ -11,7 +17,13 @@
     "sounds": [
       {
         "name": "lovehaterelationship:vampire_static_electricity",
-        "stream": false
+        "type": "sound",
+        "volume": 0.5,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": true,
+        "attenuation_distance": 16,
+        "preload": false
       }
     ]
   },
@@ -19,7 +31,13 @@
     "sounds": [
       {
         "name": "lovehaterelationship:vampire_bite",
-        "stream": false
+        "type": "sound",
+        "volume": 0.6,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false,
+        "attenuation_distance": 16,
+        "preload": false
       }
     ]
   }
