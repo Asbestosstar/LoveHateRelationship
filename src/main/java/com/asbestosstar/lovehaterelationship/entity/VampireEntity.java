@@ -306,7 +306,7 @@ public class VampireEntity extends Monster {
 	public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
 			MobSpawnType spawnType, SpawnGroupData spawnData) {
 
-		entityData.set(DATA_VARIANT, random.nextInt(2));
+		entityData.set(DATA_VARIANT, random.nextInt(5));
 
 		this.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.ELYTRA));
 		this.setDropChance(EquipmentSlot.CHEST, 75.0f);
@@ -1039,7 +1039,7 @@ LoveHateRelationShip.vampire_creepy_laugh.value(),
 	}
 
 	public int getVariant() {
-		return Mth.clamp(entityData.get(DATA_VARIANT), 0, 3);
+		return Mth.clamp(entityData.get(DATA_VARIANT), 0, 5);
 	}
 
 	// Override setTarget to prevent the vampire from targeting itself
