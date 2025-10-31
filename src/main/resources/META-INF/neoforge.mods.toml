@@ -24,7 +24,7 @@ license="Public Domain"
 modId="lovehaterelationship" #mandatory
 
 # The version number of the mod
-version="2" #mandatory
+version="3" #mandatory
 
 # A display name for the mod
 displayName="Love Hate Relationship" #mandatory
